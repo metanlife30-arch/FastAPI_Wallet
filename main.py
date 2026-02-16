@@ -1,4 +1,4 @@
-from fastapi import FastAPI, HTTPException, status, Query,Depends 
+from fastapi import FastAPI, HTTPException, status, Query,Depends
 from typing import  Annotated
 from sqlalchemy import select
 from models import User,Wallet 
@@ -6,13 +6,13 @@ from database import  session_local
 from schemas import Wallet_Сhange,UserCreate
 from auth import get_current_user, router,get_password_hash
 import uvicorn
-# Создание экземпляра FastAPI
 
+# Создание экземпляра FastAPI
 app = FastAPI()
 
-# Эндпоинт для получения всех постов
 
-@app.post("/api/v1/wallets/<WALLET_UUID>/create",summary="Create a wallet",tags=["Wallets"])
+# Эндпоинт для добавление кошешька
+@app.post("/api/v1/wallets/create",summary="Create a wallet",tags=["Wallets"])
 async def add_item(token: str = Depends(get_current_user)):
     # Поиск автора поста по ID
     async with session_local() as session:
@@ -20,8 +20,9 @@ async def add_item(token: str = Depends(get_current_user)):
         session.add(post)
         await session.commit()
         return (f"The wallet was created with an id {post.id}")
-
-@app.put("/api/v1/wallets/<WALLET_UUID>/operation",summary="Changing the balance",tags=["Wallets"])
+    
+# Эндпоинт для получения изменение баланса
+@app.put("/api/v1/wallets/operation",summary="Changing the balance",tags=["Wallets"])
 async def items(wallet:Wallet_Сhange,token: str = Depends(get_current_user)):
     async with session_local() as session:
         if wallet.operation_type=="DEPOSIT" or "WITHDRAW": # Условие если пользователь ввёл "DEPOSIT" or "WITHDRAW" идём дальше 
@@ -39,29 +40,31 @@ async def items(wallet:Wallet_Сhange,token: str = Depends(get_current_user)):
                     await session.commit()
                     return {"message": "Wallet updated"}
                 
-                result.amount =  await result.amount + wallet.amount  
+                result.amount =  result.amount + wallet.amount  
                 await session.commit()
                 return {"message": "Wallet updated"}
+            
             else:
-                result= await session.execute(select(Wallet).where(Wallet.id == wallet.id)) # Условие если было введенно WITHDRAW
+                result = await session.get(Wallet, wallet.id) # Условие если было введенно WITHDRAW
                 if not result:
                         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail='Invalid credentials')    
 
-                if wallet.amount < result.amount: 
-                    result.amount =  await result.amount - wallet.amount  
+                elif wallet.amount <= result.amount: 
+                    result.amount =  result.amount - wallet.amount  
                     await session.commit()
 
                     return {"message": "Wallet updated"}
+                raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail='The withdrawal amount is more than what is on the balance')
+                                    
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail='Invalid operation type')# Ошибка на введённый не правильный тип операции
 
-# Эндпоинт для добавления нового поста
-#@app.post("/api/v1/wallets/<WALLET_UUID>",summary="Getting a balance",tags=["Wallets"])
-#async def add_item(post: PostCreate,token: str = Depends(get_current_user)):
-#    # Поиск автора поста по ID
-#    async with session_local() as session:
-#        result = await session.execute(select(Post))
-#        posts = result.scalars().all()
-#        return  posts
+#Эндпоинт для получение суммы кошелька
+@app.get("/api/v1/wallets/get",summary="Getting a balance",tags=["Wallets"])
+async def add_item(id: int,token: str = Depends(get_current_user)):
+    # Поиск автора поста по ID
+    async with session_local() as session:
+        wallet = await session.get(Wallet, id)
+        return (f"Ваш баланс: {wallet.amount}")
     
 
 # Эндпоинт для добавления нового пользователя для доступа к Api
@@ -73,11 +76,7 @@ async def user_add(user: Annotated[UserCreate, Query(...)]):
         user = User(login=user.login, password=user.password)
         session.add(user)
         await session.commit()
-    # Создание нового пользователя
-    
-    return ("Вы зарегистрировались в системе")  # Возвращаем созданного пользователя
-
+        return ("Вы зарегистрировались в системе")  
 app.include_router(router)
 
-if __name__ == "__main__":
-    uvicorn.run(app, host="127.0.0.1", port=8000)
+
