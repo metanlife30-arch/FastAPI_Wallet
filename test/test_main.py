@@ -4,7 +4,7 @@ from httpx import AsyncClient, ASGITransport
 
 client = ASGITransport(app=app)
 
- 
+# Проверяет Эндпоинт для создание кошешька
 @pytest.mark.asyncio(loop_scope="module")
 async def test_wallet_add():
     async with AsyncClient(transport=client,base_url="http://test") as ac:
@@ -16,6 +16,7 @@ async def test_wallet_add():
         assert response.json() == [
             f"The wallet was created with an id = {data}"]
 
+# Проверяет Эндпоинт для получение суммы кошелька
 @pytest.mark.asyncio(loop_scope="module")
 async def test_wallet_get():
     async with AsyncClient(transport=client,base_url="http://test") as ac:
@@ -27,6 +28,7 @@ async def test_wallet_get():
         assert response.json() == [
             f"Ваш баланс: {data}"]
 
+# Проверяет Эндпоинт для изменение баланса
 @pytest.mark.asyncio(loop_scope="module")
 async def test_wallet_change():
     async with AsyncClient(transport=client,base_url="http://test") as ac:
