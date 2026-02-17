@@ -46,7 +46,9 @@ services:
 
     # Define a dependency on the "products_db" service, so it starts first
     depends_on:
-      - products_db
+      products_db:
+        condition: service_healthy
+        
   
 volumes:
   postgres_data:
