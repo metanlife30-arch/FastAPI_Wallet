@@ -18,9 +18,9 @@ services:
             timeout: 5s  
             retries: 3    
     environment:  # Use environment variables for db configuration
-      - POSTGRES_USER=postgres
-      - POSTGRES_PASSWORD=12345
-      - POSTGRES_DATABASE=postgres
+      - POSTGRES_USER=${DB_USER}
+      - POSTGRES_PASSWORD=${DB_PASSWORD}
+      - POSTGRES_DATABASE=${DB_NAME}
 
   api:
     build:
@@ -30,11 +30,11 @@ services:
       # Specify the image name
     image: products_api
     environment:
-      - DB_NAME=postgres  
-      - DB_USER=postgres
-      - DB_PASSWORD=12345
+      - DB_NAME=${DB_NAME}  
+      - DB_USER=${DB_USER}
+      - DB_PASSWORD=${DB_PASSWORD}
       - DB_HOST=products_db
-      - DB_PORT=5432
+      - DB_PORT=${DB_PORT}
     # this volume is used to map the files and folders on the host to the container
     # so if we change code on the host, code in the docker container will also be changed
     volumes:
